@@ -1,0 +1,33 @@
+void reverse(int* nums, int start, int end) {
+    while (start < end) {
+        int temp = nums[start];
+        nums[start] = nums[end];
+        nums[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+void nextPermutation(int* nums, int numsSize) {
+    int i = numsSize - 2;
+    
+    // 1. Find the first decreasing element from the right
+    while (i >= 0 && nums[i] >= nums[i + 1]) {
+        i--;
+    }
+    
+    if (i >= 0) {
+        // 2. Find the element just larger than nums[i] from the right
+        int j = numsSize - 1;
+        while (nums[j] <= nums[i]) {
+            j--;
+        }
+        // 3. Swap them
+        int temp = nums[i];
+        nums[i] = nums[j];
+        nums[j] = temp;
+    }
+    
+    // 4. Reverse the elements to the right of index i
+    reverse(nums, i + 1, numsSize - 1);
+}
