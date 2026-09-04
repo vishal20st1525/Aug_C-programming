@@ -1,0 +1,28 @@
+#include <stdio.h>
+
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int firstMissingPositive(int* nums, int numsSize) {
+    // Phase 1: Cycle Sort / Cyclic Placement
+    for (int i = 0; i < numsSize; i++) {
+        // While the current number is within the valid range [1, numsSize]
+        // AND it is not already in its correct position (nums[i] != nums[nums[i] - 1])
+        while (nums[i] > 0 && nums[i] <= numsSize && nums[i] != nums[nums[i] - 1]) {
+            swap(&nums[i], &nums[nums[i] - 1]);
+        }
+    }
+    
+    // Phase 2: Find the first out-of-place index
+    for (int i = 0; i < numsSize; i++) {
+        if (nums[i] != i + 1) {
+            return i + 1; // Found the missing positive integer
+        }
+    }
+    
+    // Phase 3: If all numbers from 1 to numsSize are present
+    return numsSize + 1;
+}
