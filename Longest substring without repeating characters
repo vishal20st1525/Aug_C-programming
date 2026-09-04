@@ -1,0 +1,27 @@
+// Use a unique name for the macro to avoid library conflicts
+#define MY_MAX(a, b) ((a) > (b) ? (a) : (b))
+
+int lengthOfLongestSubstring(char* s) {
+    // Array to store the last seen index + 1 of each ASCII character
+    int charIndex[128] = {0};
+    
+    int maxLength = 0;
+    int left = 0;
+    
+    for (int right = 0; s[right] != '\0'; right++) {
+        unsigned char curr = s[right];
+        
+        // If the character was seen inside or to the right of the 'left' pointer
+        if (charIndex[curr] > left) {
+            left = charIndex[curr];
+        }
+        
+        // Update the position to (current index + 1)
+        charIndex[curr] = right + 1;
+        
+        // Calculate current window length and update max
+        maxLength = MY_MAX(maxLength, right - left + 1);
+    }
+    
+    return maxLength;
+}
