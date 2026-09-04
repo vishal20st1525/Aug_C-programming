@@ -1,0 +1,51 @@
+#include <stdlib.h>
+
+// Helper function to handle the recursive construction
+struct TreeNode* buildTreeHelper(int* preorder, int* preIdx, int inStart, int inEnd, int* inorderMap, int offset) {
+    if (inStart > inEnd) {
+        return NULL;
+    }
+
+    // The current element in preorder is the root node of this subtree
+    int rootVal = preorder[*preIdx];
+    (*preIdx)++;
+
+    struct TreeNode* root = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    root->val = rootVal;
+    root->left = NULL;
+    root->right = NULL;
+
+    // Retrieve the index of this root in the inorder array using our offset map
+    int inIdx = inorderMap[rootVal + offset];
+
+    // Recursively build the left and right subtrees
+    root->left = buildTreeHelper(preorder, preIdx, inStart, inIdx - 1, inorderMap, offset);
+    root->right = buildTreeHelper(preorder, preIdx, inIdx + 1, inEnd, inorderMap, offset);
+
+    return root;
+}
+
+struct TreeNode* buildTree(int* preorder, int preorderSize, int* inorder, int inorderSize) {
+    if (preorderSize == 0 || inorderSize == 0) {
+        return NULL;
+    }
+
+    // LeetCode node values typically range from -3000 to 3000. 
+    // We map these values into a single array using an index offset of 3000.
+    int offset = 3000;
+    int mapSize = 6001; 
+    int* inorderMap = (int*)malloc(mapSize * sizeof(int));
+
+    // Cache the indices of inorder elements for O(1) lookups
+    for (int i = 0; i < inorderSize; i++) {
+        inorderMap[inorder[i] + offset] = i;
+    }
+
+    int preIdx = 0;
+    struct TreeNode* root = buildTreeHelper(preorder, &preIdx, 0, inorderSize - 1, inorderMap, offset);
+
+    // Free the temporary lookup map
+    free(inorderMap);
+
+    return root;
+}
