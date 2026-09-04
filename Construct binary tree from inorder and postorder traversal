@@ -1,0 +1,51 @@
+#include <stdlib.h>
+
+// Helper function to handle the recursive construction from right to left
+struct TreeNode* buildTreePostInHelper(int* postorder, int* postIdx, int inStart, int inEnd, int* inorderMap, int offset) {
+    if (inStart > inEnd) {
+        return NULL;
+    }
+
+    // The current element at postIdx is the root node of this subtree
+    int rootVal = postorder[*postIdx];
+    (*postIdx)--; // Move backward to the next root element
+
+    struct TreeNode* root = (struct TreeNode*)malloc(sizeof(struct TreeNode));
+    root->val = rootVal;
+    root->left = NULL;
+    root->right = NULL;
+
+    // Retrieve the index of this root in the inorder array
+    int inIdx = inorderMap[rootVal + offset];
+
+    // CRUCIAL: Build the RIGHT subtree first because postorder visits the root immediately after the right child
+    root->right = buildTreePostInHelper(postorder, postIdx, inIdx + 1, inEnd, inorderMap, offset);
+    root->left = buildTreePostInHelper(postorder, postIdx, inStart, inIdx - 1, inorderMap, offset);
+
+    return root;
+}
+
+struct TreeNode* buildTree(int* inorder, int inorderSize, int* postorder, int postorderSize) {
+    if (inorderSize == 0 || postorderSize == 0) {
+        return NULL;
+    }
+
+    // Node values range from -3000 to 3000. Use an index offset of 3000.
+    int offset = 3000;
+    int mapSize = 6001;
+    int* inorderMap = (int*)malloc(mapSize * sizeof(int));
+
+    // Cache the indices of inorder elements for O(1) lookups
+    for (int i = 0; i < inorderSize; i++) {
+        inorderMap[inorder[i] + offset] = i;
+    }
+
+    // Start postIdx from the very last element of the postorder array
+    int postIdx = postorderSize - 1;
+    struct TreeNode* root = buildTreePostInHelper(postorder, &postIdx, 0, inorderSize - 1, inorderMap, offset);
+
+    // Free the temporary lookup map
+    free(inorderMap);
+
+    return root;
+}
