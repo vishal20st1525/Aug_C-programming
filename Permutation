@@ -1,0 +1,52 @@
+#include <stdlib.h>
+#include <string.h>
+
+// Helper to swap two integers
+void swap(int* a, int* b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// Backtracking function to swap elements in place
+void backtrack(int* nums, int numsSize, int start, int** results, int* resultSize) {
+    // Base Case: A complete permutation is formed when 'start' reaches the end
+    if (start == numsSize) {
+        results[*resultSize] = (int*)malloc(numsSize * sizeof(int));
+        memcpy(results[*resultSize], nums, numsSize * sizeof(int));
+        (*resultSize)++;
+        return;
+    }
+    
+    for (int i = start; i < numsSize; i++) {
+        swap(&nums[start], &nums[i]);       // Choose: Move element to current position
+        
+        backtrack(nums, numsSize, start + 1, results, resultSize); // Explore next positions
+        
+        swap(&nums[start], &nums[i]);       // Unchoose: Undo swap (backtrack)
+    }
+}
+
+int** permute(int* nums, int numsSize, int* returnSize, int** returnColumnSizes) {
+    // Pre-calculate n! to allocate exact memory
+    int totalPermutations = 1;
+    for (int i = 1; i <= numsSize; i++) {
+        totalPermutations *= i;
+    }
+    
+    *returnSize = 0;
+    
+    // Allocate memory for the arrays of pointers
+    int** results = (int**)malloc(totalPermutations * sizeof(int*));
+    *returnColumnSizes = (int*)malloc(totalPermutations * sizeof(int));
+    
+    // Set column size for each permutation row
+    for (int i = 0; i < totalPermutations; i++) {
+        (*returnColumnSizes)[i] = numsSize;
+    }
+    
+    // Kick off backtracking starting at index 0
+    backtrack(nums, numsSize, 0, results, returnSize);
+    
+    return results;
+}
