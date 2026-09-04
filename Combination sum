@@ -1,0 +1,62 @@
+#include <stdlib.h>
+#include <string.h>
+
+// Backtracking helper function
+void backtrack(int* candidates, int candidatesSize, int target, int start, 
+               int* current, int currentSize, int*** results, int* resultSize, 
+               int** resultColSizes, int* capacity) {
+    
+    // Base Case 1: Target reached, store the valid combination
+    if (target == 0) {
+        // Expand the results arrays if capacity is reached
+        if (*resultSize >= *capacity) {
+            *capacity *= 2;
+            *results = (int**)realloc(*results, (*capacity) * sizeof(int*));
+            *resultColSizes = (int*)realloc(*resultColSizes, (*capacity) * sizeof(int));
+        }
+        
+        // Deep copy the current combination into the results matrix
+        (*results)[*resultSize] = (int*)malloc(currentSize * sizeof(int));
+        memcpy((*results)[*resultSize], current, currentSize * sizeof(int));
+        (*resultColSizes)[*resultSize] = currentSize;
+        (*resultSize)++;
+        return;
+    }
+    
+    // Base Case 2: Target exceeded, terminate this branch
+    if (target < 0) {
+        return;
+    }
+    
+    // Explore choices
+    for (int i = start; i < candidatesSize; i++) {
+        // Choose: Add candidates[i] to the path
+        current[currentSize] = candidates[i];
+        
+        // Explore: Recurse without moving the 'start' index to allow reusable elements
+        backtrack(candidates, candidatesSize, target - candidates[i], i, 
+                  current, currentSize + 1, results, resultSize, resultColSizes, capacity);
+                  
+        // Unchoose: Implicitly done by overwriting current[currentSize] in the next iteration
+    }
+}
+
+int** combinationSum(int* candidates, int candidatesSize, int target, int* returnSize, int** returnColumnSizes) {
+    int capacity = 150; // Problem constraint ensures combinations are less than 150
+    *returnSize = 0;
+    
+    // Dynamically allocate memory for our tracking matrices
+    int** results = (int**)malloc(capacity * sizeof(int*));
+    *returnColumnSizes = (int*)malloc(capacity * sizeof(int));
+    
+    // The current path stack can at most hold 'target' elements (if candidates contain 1)
+    int* current = (int*)malloc(target * sizeof(int));
+    
+    // Kick off backtracking
+    backtrack(candidates, candidatesSize, target, 0, current, 0, &results, returnSize, returnColumnSizes, &capacity);
+    
+    // Clean up our temporary working buffer
+    free(current);
+    
+    return results;
+}
