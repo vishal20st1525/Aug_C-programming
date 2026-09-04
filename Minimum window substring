@@ -1,0 +1,62 @@
+#include <string.h>
+#include <limits.h> // Fixed: Using standard C limits header
+
+char* minWindow(char* s, char* t) {
+    if (!s || !t) return "";
+
+    int sLen = strlen(s);
+    int tLen = strlen(t);
+    if (sLen < tLen || tLen == 0) return "";
+
+    int targetCounts[128] = {0};
+    int windowCounts[128] = {0};
+
+    for (int i = 0; i < tLen; i++) {
+        targetCounts[(unsigned char)t[i]]++;
+    }
+
+    int left = 0;
+    int minLen = INT_MAX;
+    int minStart = 0;
+    
+    int requiredUniqueChars = 0;
+    for (int i = 0; i < 128; i++) {
+        if (targetCounts[i] > 0) {
+            requiredUniqueChars++;
+        }
+    }
+
+    int formedUniqueChars = 0;
+
+    for (int right = 0; right < sLen; right++) {
+        unsigned char rightChar = s[right];
+        windowCounts[rightChar]++;
+
+        if (targetCounts[rightChar] > 0 && windowCounts[rightChar] == targetCounts[rightChar]) {
+            formedUniqueChars++;
+        }
+
+        while (formedUniqueChars == requiredUniqueChars) {
+            if (right - left + 1 < minLen) {
+                minLen = right - left + 1;
+                minStart = left;
+            }
+
+            unsigned char leftChar = s[left];
+            windowCounts[leftChar]--;
+
+            if (targetCounts[leftChar] > 0 && windowCounts[leftChar] < targetCounts[leftChar]) {
+                formedUniqueChars--;
+            }
+            
+            left++;
+        }
+    }
+
+    if (minLen == INT_MAX) {
+        return "";
+    }
+
+    s[minStart + minLen] = '\0';
+    return s + minStart;
+}
