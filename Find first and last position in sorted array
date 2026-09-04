@@ -1,0 +1,39 @@
+#include <stdlib.h>
+
+// Helper function to find either the first or last occurrence
+int findBound(int* nums, int numsSize, int target, int isLeft) {
+    int left = 0;
+    int right = numsSize - 1;
+    int bound = -1;
+    
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        
+        if (nums[mid] == target) {
+            bound = mid; // Record candidate index
+            if (isLeft) {
+                right = mid - 1; // Keep looking left
+            } else {
+                left = mid + 1;  // Keep looking right
+            }
+        } else if (nums[mid] < target) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return bound;
+}
+
+int* searchRange(int* nums, int numsSize, int target, int* returnSize) {
+    // Online judges require setting the return size explicitly
+    *returnSize = 2;
+    int* result = (int*)malloc(2 * sizeof(int));
+    
+    // Find starting and ending positions
+    result[0] = findBound(nums, numsSize, target, 1); // 1 for left bound
+    result[1] = findBound(nums, numsSize, target, 0); // 0 for right bound
+    
+    return result;
+}
