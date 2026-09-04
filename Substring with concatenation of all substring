@@ -1,0 +1,138 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define HASH_SIZE 1013 // Prime number for hash table capacity
+
+// Structure to track word frequencies in our Hash Map
+typedef struct {
+    char* word;
+    int count;
+} HashEntry;
+
+// Simple polynomial rolling hash function
+unsigned int getHash(const char* str, int len) {
+    unsigned int hash = 0;
+    for (int i = 0; i < len; i++) {
+        hash = hash * 31 + str[i];
+    }
+    return hash % HASH_SIZE;
+}
+
+// Inserts or increments a word count in the hash map (Linear Probing)
+void insertWord(HashEntry* table, const char* str, int len) {
+    unsigned int idx = getHash(str, len);
+    while (table[idx].word != NULL) {
+        if (strncmp(table[idx].word, str, len) == 0 && strlen(table[idx].word) == len) {
+            table[idx].count++;
+            return;
+        }
+        idx = (idx + 1) % HASH_SIZE;
+    }
+    table[idx].word = strndup(str, len);
+    table[idx].count = 1;
+}
+
+// Retrieves the expected total frequency of a word from the base map
+int getWordCount(HashEntry* table, const char* str, int len) {
+    unsigned int idx = getHash(str, len);
+    while (table[idx].word != NULL) {
+        if (strncmp(table[idx].word, str, len) == 0 && strlen(table[idx].word) == len) {
+            return table[idx].count;
+        }
+        idx = (idx + 1) % HASH_SIZE;
+    }
+    return 0;
+}
+
+char** letterCombinations(char* digits, int* returnSize); // Placeholder declaration
+
+int* findSubstring(char* s, char** words, int wordsSize, int* returnSize) {
+    *returnSize = 0;
+    if (!s || wordsSize == 0 || !words) return NULL;
+
+    int sLen = strlen(s);
+    int wordLen = strlen(words[0]);
+    int totalWordsLen = wordsSize * wordLen;
+    if (sLen < totalWordsLen) return NULL;
+
+    // Allocate memory for the maximum possible result indices
+    int* result = (int*)malloc(sLen * sizeof(int));
+
+    // Populate base word map frequencies
+    HashEntry wordCountMap[HASH_SIZE] = {0};
+    for (int i = 0; i < wordsSize; i++) {
+        insertWord(wordCountMap, words[i], wordLen);
+    }
+
+    // Run sliding windows for each possible offset configuration
+    for (int i = 0; i < wordLen; i++) {
+        int left = i;
+        int count = 0;
+        
+        // Track current sliding window frequencies dynamically
+        HashEntry windowMap[HASH_SIZE] = {0};
+
+        for (int right = i; right + wordLen <= sLen; right += wordLen) {
+            char* currentWord = s + right;
+            int expectedCount = getWordCount(wordCountMap, currentWord, wordLen);
+
+            // If the word isn't part of our dictionary, flush the current window
+            if (expectedCount == 0) {
+                // Clear active window map
+                for (int j = 0; j < HASH_SIZE; j++) {
+                    if (windowMap[j].word) {
+                        free(windowMap[j].word);
+                        windowMap[j].word = NULL;
+                        windowMap[j].count = 0;
+                    }
+                }
+                left = right + wordLen;
+                count = 0;
+                continue;
+            }
+
+            // Word exists, add to window map tracking
+            unsigned int wIdx = getHash(currentWord, wordLen);
+            while (windowMap[wIdx].word != NULL && strncmp(windowMap[wIdx].word, currentWord, wordLen) != 0) {
+                wIdx = (wIdx + 1) % HASH_SIZE;
+            }
+            if (windowMap[wIdx].word == NULL) {
+                windowMap[wIdx].word = strndup(currentWord, wordLen);
+                windowMap[wIdx].count = 1;
+            } else {
+                windowMap[wIdx].count++;
+            }
+            count++;
+
+            // If a valid word exceeds its target count, shrink window from the left
+            while (windowMap[wIdx].count > expectedCount) {
+                char* leftWord = s + left;
+                unsigned int lIdx = getHash(leftWord, wordLen);
+                while (strncmp(windowMap[lIdx].word, leftWord, wordLen) != 0) {
+                    lIdx = (lIdx + 1) % HASH_SIZE;
+                }
+                windowMap[lIdx].count--;
+                count--;
+                left += wordLen;
+            }
+
+            // If window holds exactly all words, save starting index
+            if (count == wordsSize) {
+                result[(*returnSize)++] = left;
+            }
+        }
+
+        // Clean up window memory allocations for next offset iteration
+        for (int j = 0; j < HASH_SIZE; j++) {
+            if (windowMap[j].word) free(windowMap[j].word);
+        }
+    }
+
+    // Clean up base map allocations
+    for (int i = 0; i < HASH_SIZE; i++) {
+        if (wordCountMap[i].word) free(wordCountMap[i].word);
+    }
+
+    return result;
+}
