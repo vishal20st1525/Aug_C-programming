@@ -1,0 +1,37 @@
+#include <stdbool.h>
+
+void setZeroes(int** matrix, int matrixSize, int* matrixColSize) {
+    int rows = matrixSize;
+    int cols = matrixColSize[0];
+    bool firstColZero = false;
+
+    // Phase 1: Scan the matrix and mark rows/cols in the first row/col
+    for (int r = 0; r < rows; r++) {
+        // Check if the first column needs to be zeroed out
+        if (matrix[r][0] == 0) {
+            firstColZero = true;
+        }
+        
+        // Scan the rest of the columns
+        for (int c = 1; c < cols; c++) {
+            if (matrix[r][c] == 0) {
+                matrix[r][0] = 0; // Mark row
+                matrix[0][c] = 0; // Mark column
+            }
+        }
+    }
+
+    // Phase 2: Update cells based on the markers (iterate backwards)
+    // We iterate backwards to avoid destroying the marker values prematurely
+    for (int r = rows - 1; r >= 0; r--) {
+        for (int c = cols - 1; c >= 1; c--) {
+            if (matrix[r][0] == 0 || matrix[0][c] == 0) {
+                matrix[r][c] = 0;
+            }
+        }
+        // Update the first column independently at the end of each row
+        if (firstColZero) {
+            matrix[r][0] = 0;
+        }
+    }
+}
