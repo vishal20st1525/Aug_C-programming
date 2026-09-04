@@ -1,0 +1,39 @@
+#include <stdbool.h>
+
+bool isValidSudoku(char** board, int boardSize, int* boardColSize) {
+    // Bitmask arrays initialized to 0
+    // Each index (0-8) tracks the digits 1-9 for that specific row/col/box
+    int rows[9] = {0};
+    int cols[9] = {0};
+    int boxes[9] = {0};
+
+    for (int r = 0; r < 9; r++) {
+        for (int c = 0; c < 9; c++) {
+            char val = board[r][c];
+
+            // Skip empty cells
+            if (val == '.') {
+                continue;
+            }
+
+            // Convert character digit to a 0-indexed bit shift position (0 to 8)
+            int digitShift = val - '1';
+            int mask = 1 << digitShift;
+
+            // Calculate the 3x3 sub-box index (0 to 8)
+            int boxIdx = (r / 3) * 3 + (c / 3);
+
+            // Bitwise AND checks if the bit at digitShift position is already 1
+            if ((rows[r] & mask) || (cols[c] & mask) || (boxes[boxIdx] & mask)) {
+                return false; 
+            }
+
+            // Bitwise OR sets the bit at digitShift position to 1
+            rows[r] |= mask;
+            cols[c] |= mask;
+            boxes[boxIdx] |= mask;
+        }
+    }
+
+    return true;
+}
