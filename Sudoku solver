@@ -1,0 +1,80 @@
+#include <stdbool.h>
+
+// Global arrays for rows, columns, and 3x3 sub-boxes bitmasks
+int rowMask[9];
+int colMask[9];
+int boxMask[9];
+
+bool backtrack(char** board, int r, int c) {
+    // If we've processed all columns in this row, move to the next row
+    if (c == 9) {
+        r++;
+        c = 0;
+    }
+    // If we've filled the entire board, the puzzle is solved
+    if (r == 9) {
+        return true;
+    }
+
+    // Skip already filled cells
+    if (board[r][c] != '.') {
+        return backtrack(board, r, c + 1);
+    }
+
+    int boxIdx = (r / 3) * 3 + (c / 3);
+
+    // Try placing digits from '1' to '9'
+    for (int digit = 1; digit <= 9; digit++) {
+        int mask = 1 << (digit - 1);
+
+        // Check if the digit is already used in the current row, column, or box
+        if (!(rowMask[r] & mask) && !(colMask[c] & mask) && !(boxMask[boxIdx] & mask)) {
+            
+            // Choose: Place the digit and update masks
+            board[r][c] = digit + '0';
+            rowMask[r] |= mask;
+            colMask[c] |= mask;
+            boxMask[boxIdx] |= mask;
+
+            // Recurse to see if this path leads to a valid solution
+            if (backtrack(board, r, c + 1)) {
+                return true;
+            }
+
+            // Unchoose (Backtrack): Undo the placement and reset masks
+            board[r][c] = '.';
+            rowMask[r] &= ~mask;
+            colMask[c] &= ~mask;
+            boxMask[boxIdx] &= ~mask;
+        }
+    }
+
+    return false; // Triggers backtracking to the previous cell
+}
+
+void solveSudoku(char** board, int boardSize, int* boardColSize) {
+    // Reset bitmasks to 0 for each execution (crucial for LeetCode)
+    for (int i = 0; i < 9; i++) {
+        rowMask[i] = 0;
+        colMask[i] = 0;
+        boxMask[i] = 0;
+    }
+
+    // Populate initial state from the starting board configurations
+    for (int r = 0; r < 9; r++) {
+        for (int c = 0; c < 9; c++) {
+            if (board[r][c] != '.') {
+                int digitShift = board[r][c] - '1';
+                int mask = 1 << digitShift;
+                int boxIdx = (r / 3) * 3 + (c / 3);
+
+                rowMask[r] |= mask;
+                colMask[c] |= mask;
+                boxMask[boxIdx] |= mask;
+            }
+        }
+    }
+
+    // Start the backtracking solver from the top-left cell (0, 0)
+    backtrack(board, 0, 0);
+}
