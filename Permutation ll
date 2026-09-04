@@ -1,0 +1,71 @@
+#include <stdlib.h>
+#include <string.h>
+
+// Standard qsort comparison function
+int compare(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// Backtracking helper function using int*** for results reference handling
+void backtrack(int* nums, int numsSize, int* current, int currentSize, 
+               int* visited, int*** results, int* resultSize, int* capacity) {
+    
+    // Base Case: A complete unique permutation is formed
+    if (currentSize == numsSize) {
+        if (*resultSize >= *capacity) {
+            *capacity *= 2;
+            // Correctly reallocate the original pointer via its address reference
+            *results = (int**)realloc(*results, (*capacity) * sizeof(int*));
+        }
+        (*results)[*resultSize] = (int*)malloc(numsSize * sizeof(int));
+        memcpy((*results)[*resultSize], current, numsSize * sizeof(int));
+        (*resultSize)++;
+        return;
+    }
+    
+    for (int i = 0; i < numsSize; i++) {
+        if (visited[i]) {
+            continue;
+        }
+        
+        // Skip duplicate sibling branches
+        if (i > 0 && nums[i] == nums[i - 1] && !visited[i - 1]) {
+            continue;
+        }
+        
+        // Choose
+        visited[i] = 1;
+        current[currentSize] = nums[i];
+        
+        // Explore (Passing results down by keeping its reference intact)
+        backtrack(nums, numsSize, current, currentSize + 1, visited, results, resultSize, capacity);
+        
+        // Unchoose (Backtrack)
+        visited[i] = 0;
+    }
+}
+
+int** permuteUnique(int* nums, int numsSize, int* returnSize, int** returnColumnSizes) {
+    qsort(nums, numsSize, sizeof(int), compare);
+    
+    int capacity = 10; 
+    *returnSize = 0;
+    
+    int** results = (int**)malloc(capacity * sizeof(int*));
+    int* current = (int*)malloc(numsSize * sizeof(int));
+    int* visited = (int*)calloc(numsSize, sizeof(int)); 
+    
+    // Pass the address of the results pointer (&results) to support mutations via realloc
+    backtrack(nums, numsSize, current, 0, visited, &results, returnSize, &capacity);
+    
+    // Populate column dimensions
+    *returnColumnSizes = (int*)malloc((*returnSize) * sizeof(int));
+    for (int i = 0; i < *returnSize; i++) {
+        (*returnColumnSizes)[i] = numsSize;
+    }
+    
+    free(current);
+    free(visited);
+    
+    return results;
+}
