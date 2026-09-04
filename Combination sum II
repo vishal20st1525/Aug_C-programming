@@ -1,0 +1,68 @@
+#include <stdlib.h>
+#include <string.h>
+
+// Standard qsort comparison function
+int compare(const void* a, const void* b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// Backtracking helper function
+void backtrack(int* candidates, int candidatesSize, int target, int start, 
+               int* current, int currentSize, int*** results, int* resultSize, 
+               int** resultColSizes, int* capacity) {
+    
+    // Base Case 1: Target reached
+    if (target == 0) {
+        if (*resultSize >= *capacity) {
+            *capacity *= 2;
+            *results = (int**)realloc(*results, (*capacity) * sizeof(int*));
+            *resultColSizes = (int*)realloc(*resultColSizes, (*capacity) * sizeof(int));
+        }
+        
+        (*results)[*resultSize] = (int*)malloc(currentSize * sizeof(int));
+        memcpy((*results)[*resultSize], current, currentSize * sizeof(int));
+        (*resultColSizes)[*resultSize] = currentSize;
+        (*resultSize)++;
+        return;
+    }
+    
+    // Explore choices
+    for (int i = start; i < candidatesSize; i++) {
+        // Optimization: If the current element is larger than the remaining target, 
+        // because the array is sorted, all subsequent elements will also be too large.
+        if (candidates[i] > target) {
+            break; 
+        }
+        
+        // Skip duplicate combinations at the same decision level
+        if (i > start && candidates[i] == candidates[i - 1]) {
+            continue;
+        }
+        
+        // Choose
+        current[currentSize] = candidates[i];
+        
+        // Explore: Pass 'i + 1' so the current element cannot be reused
+        backtrack(candidates, candidatesSize, target - candidates[i], i + 1, 
+                  current, currentSize + 1, results, resultSize, resultColSizes, capacity);
+                  
+        // Unchoose (Implicitly handled during the next loop iteration)
+    }
+}
+
+int** combinationSum2(int* candidates, int candidatesSize, int target, int* returnSize, int** returnColumnSizes) {
+    // Sort the input array to safely skip duplicates and optimize pruning
+    qsort(candidates, candidatesSize, sizeof(int), compare);
+    
+    int capacity = 150; 
+    *returnSize = 0;
+    
+    int** results = (int**)malloc(capacity * sizeof(int*));
+    *returnColumnSizes = (int*)malloc(capacity * sizeof(int));
+    int* current = (int*)malloc(candidatesSize * sizeof(int));
+    
+    backtrack(candidates, candidatesSize, target, 0, current, 0, &results, returnSize, returnColumnSizes, &capacity);
+    
+    free(current);
+    return results;
+}
