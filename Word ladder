@@ -1,0 +1,75 @@
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+// Helper function to check if two words differ by exactly one character
+bool isAdjacent(const char* w1, const char* w2, int len) {
+    int diff = 0;
+    for (int i = 0; i < len; i++) {
+        if (w1[i] != w2[i]) {
+            if (++diff > 1) return false;
+        }
+    }
+    return diff == 1;
+}
+
+int ladderLength(char* beginWord, char* endWord, char** wordList, int wordListSize) {
+    // Step 1: Verify if endWord is present in the dictionary
+    int endIdx = -1;
+    for (int i = 0; i < wordListSize; i++) {
+        if (strcmp(wordList[i], endWord) == 0) {
+            endIdx = i;
+            break;
+        }
+    }
+    if (endIdx == -1) return 0; // endWord cannot be reached
+
+    int wordLen = strlen(beginWord);
+
+    // Step 2: Set up a visited tracking array and a custom index-based queue
+    bool* visited = (bool*)calloc(wordListSize, sizeof(bool));
+    int* queue = (int*)malloc((wordListSize + 1) * sizeof(int));
+    int head = 0, tail = 0;
+
+    // Step 3: Seed the initial stage of the queue with an artificial layout logic
+    // We check which words in wordList can be transitioned to directly from beginWord
+    for (int i = 0; i < wordListSize; i++) {
+        if (isAdjacent(beginWord, wordList[i], wordLen)) {
+            queue[tail++] = i;
+            visited[i] = true;
+        }
+    }
+
+    int sequenceLength = 2; // Level 1 is beginWord, level 2 is the initial neighbors
+
+    // Step 4: Run level-by-level BFS traversal
+    while (head < tail) {
+        int currentLevelSize = tail - head;
+
+        // Process all nodes currently in the queue for this level
+        for (int i = 0; i < currentLevelSize; i++) {
+            int currIdx = queue[head++];
+
+            // Destination achieved; return current tracking depth level
+            if (currIdx == endIdx) {
+                free(visited);
+                free(queue);
+                return sequenceLength;
+            }
+
+            // Find unvisited neighbors for the next layer check
+            for (int nextIdx = 0; nextIdx < wordListSize; nextIdx++) {
+                if (!visited[nextIdx] && isAdjacent(wordList[currIdx], wordList[nextIdx], wordLen)) {
+                    queue[tail++] = nextIdx;
+                    visited[nextIdx] = true;
+                }
+            }
+        }
+        sequenceLength++; // Advance the step level length counter
+    }
+
+    // Clean up dynamic allocations if no path is found
+    free(visited);
+    free(queue);
+    return 0;
+}
