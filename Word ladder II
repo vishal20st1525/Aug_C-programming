@@ -1,0 +1,148 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+// Helper structure to build a lightweight hash/adjacency tracker for words
+typedef struct {
+    int* neighbors;
+    int count;
+    int capacity;
+} WordNode;
+
+// Helper structure to represent paths during backtracking
+typedef struct {
+    char*** paths;
+    int size;
+    int capacity;
+    int* colSizes;
+} PathResult;
+
+// Returns true if two words differ by exactly one character
+bool isAdjacent(const char* w1, const char* w2, int len) {
+    int diff = 0;
+    for (int i = 0; i < len; i++) {
+        if (w1[i] != w2[i]) {
+            if (++diff > 1) return false;
+        }
+    }
+    return diff == 1;
+}
+
+// Backtracking DFS to harvest paths backwards from endWord to beginWord
+void dfs(int currIdx, int targetIdx, int* dist, WordNode* adj, char** words, 
+         char** currentPath, int pathLen, PathResult* res) {
+    currentPath[pathLen++] = words[currIdx];
+    
+    if (currIdx == targetIdx) {
+        // Found a valid shortest path; store it in results inverted/reversed
+        if (res->size >= res->capacity) {
+            res->capacity *= 2;
+            res->paths = (char***)realloc(res->paths, res->capacity * sizeof(char**));
+            res->colSizes = (int*)realloc(res->colSizes, res->capacity * sizeof(int));
+        }
+        char** pathCopy = (char**)malloc(pathLen * sizeof(char*));
+        for (int i = 0; i < pathLen; i++) {
+            pathCopy[i] = currentPath[pathLen - 1 - i]; // Reverse back to original order
+        }
+        res->colSizes[res->size] = pathLen;
+        res->paths[res->size++] = pathCopy;
+        return;
+    }
+
+    for (int i = 0; i < adj[currIdx].count; i++) {
+        int next = adj[currIdx].neighbors[i];
+        // Only move to adjacent nodes whose distance is exactly 1 step closer to beginWord
+        if (dist[next] == dist[currIdx] - 1) {
+            dfs(next, targetIdx, dist, adj, words, currentPath, pathLen, res);
+        }
+    }
+}
+
+char*** findLadders(char* beginWord, char* endWord, char** wordList, int wordListSize, 
+                    int* returnSize, int** returnColumnSizes) {
+    *returnSize = 0;
+    *returnColumnSizes = NULL;
+
+    int endIdx = -1;
+    for (int i = 0; i < wordListSize; i++) {
+        if (strcmp(wordList[i], endWord) == 0) {
+            endIdx = i;
+            break;
+        }
+    }
+    if (endIdx == -1) return NULL; // endWord not in dictionary
+
+    // Construct unified internal lookup list containing all items
+    int totalWords = wordListSize + 1;
+    char** allWords = (char**)malloc(totalWords * sizeof(char*));
+    for (int i = 0; i < wordListSize; i++) allWords[i] = wordList[i];
+    int beginIdx = wordListSize;
+    allWords[beginIdx] = beginWord;
+
+    int wordLen = strlen(beginWord);
+    WordNode* adj = (WordNode*)calloc(totalWords, sizeof(WordNode));
+
+    // Initialize tracking arrays for BFS
+    int* dist = (int*)malloc(totalWords * sizeof(int));
+    for (int i = 0; i < totalWords; i++) dist[i] = -1;
+
+    int* queue = (int*)malloc(totalWords * sizeof(int));
+    int head = 0, tail = 0;
+
+    // Start BFS from beginWord
+    queue[tail++] = beginIdx;
+    dist[beginIdx] = 0;
+
+    bool foundShortest = false;
+
+    while (head < tail) {
+        int qSize = tail - head;
+        // Process tier by tier to catch the shortest distance cleanly
+        for (int k = 0; k < qSize; k++) {
+            int curr = queue[head++];
+            
+            if (curr == endIdx) {
+                foundShortest = true;
+            }
+
+            for (int next = 0; next < totalWords; next++) {
+                if (isAdjacent(allWords[curr], allWords[next], wordLen)) {
+                    // Record neighbor mapping
+                    if (adj[next].count >= adj[next].capacity) {
+                        adj[next].capacity = adj[next].capacity == 0 ? 4 : adj[next].capacity * 2;
+                        adj[next].neighbors = (int*)realloc(adj[next].neighbors, adj[next].capacity * sizeof(int));
+                    }
+                    adj[next].neighbors[adj[next].count++] = curr;
+
+                    if (dist[next] == -1) {
+                        dist[next] = dist[curr] + 1;
+                        queue[tail++] = next;
+                    }
+                }
+            }
+        }
+        if (foundShortest) break;
+    }
+
+    PathResult res = { .paths = (char***)malloc(16 * sizeof(char***)), .size = 0, .capacity = 16, .colSizes = (int*)malloc(16 * sizeof(int)) };
+
+    // If a valid path exists, trace backwards using our graph transitions via DFS
+    if (dist[endIdx] != -1) {
+        char** currentPath = (char**)malloc(totalWords * sizeof(char*));
+        dfs(endIdx, beginIdx, dist, adj, allWords, currentPath, 0, &res);
+        free(currentPath);
+    }
+
+    // Free local structural tracking maps
+    for (int i = 0; i < totalWords; i++) {
+        if (adj[i].neighbors) free(adj[i].neighbors);
+    }
+    free(adj);
+    free(dist);
+    free(queue);
+    free(allWords);
+
+    *returnSize = res.size;
+    *returnColumnSizes = res.colSizes;
+    return res.paths;
+}
